@@ -30,10 +30,11 @@ contract KreskoGateway {
     /**
     * @notice Deposits msg.value as collateral on behalf of msg.sender
     */
-    function deposit() external payable {
+    function deposit() public payable {
         require(msg.value > 0, "KreskoGateway: No value sent");
         require(kresko.collateralExists(wAsset), "Kresko Collateral does not exist");
-        wAsset.call{value: msg.value}("");
+        (bool success,) = wAsset.call{value: msg.value}("");
+        require(success, "KreskoGateway: Failed to wrap gas asset");
         IERC20(wAsset).approve(address(kresko), msg.value);
         kresko.depositCollateral(msg.sender, wAsset, msg.value);
     }
