@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IKresko} from "./interfaces/IKresko.sol";
-import {IERC20} from "./vendor/IERC20.sol";
+import {IWAsset} from "./interfaces/IWAsset.sol";
 
 /** 
 * @title KreskoGateway
@@ -12,10 +12,10 @@ import {IERC20} from "./vendor/IERC20.sol";
 contract KreskoGateway {
 
     // Kresko contract
-    IKresko public kresko;
+    IKresko public immutable kresko;
 
     // Wrapped gas asset
-    address public immutable wAsset;
+    IWAsset public immutable wAsset;
 
     /**
     * @notice Constructor
@@ -24,28 +24,54 @@ contract KreskoGateway {
     */
     constructor(address _kresko, address _wAsset) {
         kresko = IKresko(_kresko);
-        wAsset = _wAsset;
+        wAsset = IWAsset(_wAsset);
+
+        wAsset.approve(address(kresko), type(uint256).max);
     }
     
     /**
     * @notice Deposits msg.value as collateral on behalf of msg.sender
+    * @param _account address of the user to whom the collateral would be deposited
     */
-    function deposit() public payable {
+    function deposit(address _account) public payable {
         require(msg.value > 0, "KreskoGateway: No value sent");
-        require(kresko.collateralExists(wAsset), "Kresko Collateral does not exist");
+        require(kresko.collateralExists(address(wAsset)), "Kresko Collateral does not exist");
         
-        (bool success,) = wAsset.call{value: msg.value}("");
-        require(success, "KreskoGateway: Failed to wrap gas asset");
-        
-        IERC20(wAsset).approve(address(kresko), msg.value);
-        kresko.depositCollateral(msg.sender, wAsset, msg.value);
+        wAsset.deposit{value: msg.value}();     
+        kresko.depositCollateral(_account, address(wAsset), msg.value);
     }
 
+    /**
+     * @dev withdraws the wAsset collateral of msg.sender.
+     * @param to address of the user who will receive native gas token
+     * @param amount amount of wAsset to withdraw and receive native gas token
+     */
+    function withdraw(
+        address to,
+        uint256 amount
+    ) external {
+        uint cIndex = kresko.getDepositedCollateralAssetIndex(msg.sender, address(wAsset));
+        kresko.withdrawCollateral(msg.sender, address(wAsset), amount, cIndex);
+        
+        wAsset.transferFrom(msg.sender, address(this), amount);
+        wAsset.withdraw(amount);
+        
+        (bool success, ) = to.call{value: amount}(new bytes(0));
+        require(success, 'TRANSFER_FAILED');
+    }
+
+    /**
+    * @dev Only wAsset contract is allowed to transfer gas token here. Prevent other
+    addresses to send gas token to this contract.
+    */
     receive() external payable {
-        deposit();
+        require(msg.sender == address(wAsset), 'Receive not allowed');
     }
 
+    /**
+    * @dev Revert fallback calls
+    */
     fallback() external payable {
-        deposit();
+      revert('Fallback not allowed');
     }
 }

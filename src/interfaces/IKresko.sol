@@ -245,4 +245,13 @@ interface IKresko {
         address _account,
         address _asset
     ) external view returns (uint128 lastDebtIndex);
+
+    function getDepositedCollateralAssetIndex(
+        address _account,
+        address _collateralAsset
+    ) external view returns (uint256);
+
+    function grantRole(bytes32 role, address account) external;
+
+    function hasRole(bytes32 role, address account) external view returns (bool);
 }
