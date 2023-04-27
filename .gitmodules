@@ -10,3 +10,6 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
+[submodule "lib/kresko-foundry-helpers"]
+	path = lib/kresko-foundry-helpers
+	url = https://github.com/kreskohq/kresko-foundry-helpers
