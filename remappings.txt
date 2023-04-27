@@ -3,3 +3,4 @@ forge-std/=lib/forge-std/src
 solmate/=lib/solmate/src
 oz-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts
 oz-contracts/=lib/openzeppelin-contracts/contracts
+kresko-foundry-helpers/=lib/kresko-foundry-helpers/src
