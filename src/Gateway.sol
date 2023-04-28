@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import {IKresko} from "./interfaces/IKresko.sol";
 import {IWAsset} from "./interfaces/IWAsset.sol";
@@ -17,47 +17,59 @@ contract KreskoGateway {
     // Wrapped gas asset
     IWAsset public immutable wAsset;
 
+    /// @notice emitted when a user deposits collateral
+    event Deposit(address indexed account, uint256 amount);
+
+    /// @notice emitted when a user withdraw collateral
+    event Withdraw(address indexed account, uint256 amount);
+
     /**
-    * @notice Constructor
-    * @param _kresko Kresko contract address
-    * @param _wAsset Wrapped gas asset address
+* @dev Sets the Kresko address and the wrapped gas token address. Infinite
+  approves kresko to transfer wrapped gas token.
+    * @param _kresko Addess of Kresko contract 
+    * @param _wAsset Address of Wrapped gas asset
     */
     constructor(address _kresko, address _wAsset) {
         kresko = IKresko(_kresko);
         wAsset = IWAsset(_wAsset);
 
+        // Infinite approve kresko to transfer wrapped gas token.
         wAsset.approve(address(kresko), type(uint256).max);
     }
     
     /**
-    * @notice Deposits msg.value as collateral on behalf of msg.sender
-    * @param _account address of the user to whom the collateral would be deposited
+    * @dev Deposits msg.value as collateral on behalf of _account
+    * @param _account Address of the user to whom the collateral would be deposited
     */
     function deposit(address _account) public payable {
         require(msg.value > 0, "KreskoGateway: No value sent");
         require(kresko.collateralExists(address(wAsset)), "Kresko Collateral does not exist");
         
-        wAsset.deposit{value: msg.value}();     
+        wAsset.deposit{value: msg.value}();
         kresko.depositCollateral(_account, address(wAsset), msg.value);
+
+        emit Deposit(_account, msg.value);
     }
 
     /**
      * @dev withdraws the wAsset collateral of msg.sender.
-     * @param to address of the user who will receive native gas token
-     * @param amount amount of wAsset to withdraw and receive native gas token
+     * @param _to address of the user who will receive native gas token
+     * @param _amount amount of wAsset to withdraw and receive native gas token
      */
     function withdraw(
-        address to,
-        uint256 amount
+        address _to,
+        uint256 _amount
     ) external {
         uint cIndex = kresko.getDepositedCollateralAssetIndex(msg.sender, address(wAsset));
-        kresko.withdrawCollateral(msg.sender, address(wAsset), amount, cIndex);
+        kresko.withdrawCollateral(msg.sender, address(wAsset), _amount, cIndex);
         
-        wAsset.transferFrom(msg.sender, address(this), amount);
-        wAsset.withdraw(amount);
+        wAsset.transferFrom(msg.sender, address(this), _amount);
+        wAsset.withdraw(_amount);
         
-        (bool success, ) = to.call{value: amount}(new bytes(0));
+        (bool success, ) = _to.call{value: _amount}(new bytes(0));
         require(success, 'TRANSFER_FAILED');
+
+        emit Withdraw(_to, _amount);
     }
 
     /**
