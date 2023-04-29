@@ -17,6 +17,10 @@ contract KreskoGateway {
     // Wrapped gas asset
     IWAsset public immutable wAsset;
 
+    /* -------------------------------------------------------------------------- */
+    /*                                   EVENTS                                   */
+    /* -------------------------------------------------------------------------- */
+
     /// @notice emitted when a user deposits collateral
     event Deposit(address indexed account, uint256 amount);
 
@@ -24,8 +28,8 @@ contract KreskoGateway {
     event Withdraw(address indexed account, uint256 amount);
 
     /**
-* @dev Sets the Kresko address and the wrapped gas token address. Infinite
-  approves kresko to transfer wrapped gas token.
+    * @dev Sets the Kresko address and the wrapped gas token address. Infinite
+    approves kresko to transfer wrapped gas token.
     * @param _kresko Addess of Kresko contract 
     * @param _wAsset Address of Wrapped gas asset
     */
@@ -41,7 +45,7 @@ contract KreskoGateway {
     * @dev Deposits msg.value as collateral on behalf of _account
     * @param _account Address of the user to whom the collateral would be deposited
     */
-    function deposit(address _account) public payable {
+    function deposit(address _account) external payable {
         require(msg.value > 0, "KreskoGateway: No value sent");
         require(kresko.collateralExists(address(wAsset)), "Kresko Collateral does not exist");
         
