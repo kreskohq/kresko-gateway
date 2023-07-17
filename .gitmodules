@@ -13,3 +13,6 @@
 [submodule "lib/kresko-foundry-helpers"]
 	path = lib/kresko-foundry-helpers
 	url = https://github.com/kreskohq/kresko-foundry-helpers
+[submodule "lib/redstone-oracles-monorepo"]
+	path = lib/redstone-oracles-monorepo
+	url = https://github.com/redstone-finance/redstone-oracles-monorepo
