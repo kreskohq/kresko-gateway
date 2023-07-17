@@ -3,13 +3,14 @@ pragma solidity 0.8.19;
 
 import {IKresko} from "./interfaces/IKresko.sol";
 import {IWAsset} from "./interfaces/IWAsset.sol";
+import {ProxyConnector} from "../lib/redstone-oracles-monorepo/packages/evm-connector/contracts/core/ProxyConnector.sol";
 
 /**
  * @title KreskoGateway
  * @author Kresko
  * @dev Gateway contract that checks if the gas asset has a wrapper token that is accepted as collateral. If so, wraps msg.value and deposits on behalf of msg.sender as collateral.
  */
-contract KreskoGateway {
+contract KreskoGateway is ProxyConnector {
     // Kresko contract
     IKresko public immutable kresko;
 
@@ -67,7 +68,18 @@ contract KreskoGateway {
             msg.sender,
             address(wAsset)
         );
-        kresko.withdrawCollateral(msg.sender, address(wAsset), _amount, cIndex);
+
+        proxyCalldata(
+            address(kresko),
+            abi.encodeWithSelector(
+                kresko.withdrawCollateral.selector,
+                msg.sender,
+                address(wAsset),
+                _amount,
+                cIndex
+            ),
+            false
+        );
 
         wAsset.transferFrom(msg.sender, address(this), _amount);
         wAsset.withdraw(_amount);
